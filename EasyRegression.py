@@ -5,7 +5,7 @@ import librosa
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 import math
-
+from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 # Regression Model
@@ -17,6 +17,8 @@ from sklearn.linear_model import Lars
 from sklearn.linear_model import BayesianRidge
 from sklearn.linear_model import SGDRegressor
 from sklearn.linear_model import RANSACRegressor
+
+from sklearn.model_selection import cross_val_score
 
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.tree import DecisionTreeRegressor
@@ -262,7 +264,7 @@ class EasyRegression:
         self.params['ada'] = {'learning_rate':[.01,.001,.0001],'n_estimators':[50,100,150,200],'loss':['linear', 'square', 'exponential']}
         self.params['gb'] = {'learning_rate':[.01,.001,.0001],'n_estimators':[50,100,150,200],'loss':['ls', 'lad', 'huber', 'quantile'],'min_samples_split':[3,4,5]}
         self.params['xg']={'booster':['gbtree', 'gblinear','dart'],'max_depth':[2,3,4,5,6]}
-        self.params['mlp']={'solver':['lbfgs'],'activation':['identity', 'logistic', 'tanh', 'relu'],'hidden_layer_sizes':[(5,5),(5,5,5),(5,4,3),(10,10,5)]}
+        self.params['mlp']={'solver':['lbfgs','sgd','adam'],'activation':['identity', 'logistic', 'tanh', 'relu'],'hidden_layer_sizes':[(5,5),(5,5,5),(5,4,3),(10,10,5)],'max_iter':[1000]}
         k=['rbf', 'linear','poly','sigmoid']
         c= [1,10,100,.1]
         g=[.0001,.001,.001,.01,.1]
@@ -279,24 +281,136 @@ class EasyRegression:
         print('-------------------------------------------')
         
         
-    def findParameters(self,strategy,label_name):
+    def findParameters(self,strategy,label_name,group,cv=10):
         if label_name not in self.labels.columns:
             print('Label does not exists')
             return None
         self.scaled_features = self.Scaling(self.features,'std')
         
         if (strategy == 'train_test_split'):
+            print('==============================================')
+            print('  Evaluation strategy: Train and Test Split   ')
+            print('==============================================')
             self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.scaled_features,self.labels[label_name])
             
         
             for model in self.models.keys():
                 if model == 'vot':
-                    self.models[model].fit(self.X_train,self.X_test)
+                    continue
                 print('    ==> Finding params for ',model)
                 gd = GridSearchCV(self.models[model],self.params[model],cv=10,scoring='neg_root_mean_squared_error')
                 gd.fit(self.X_train,self.y_train)
                 print('        Parameters: ',gd.best_params_)
                 self.models[model] = gd.best_estimator_
+        elif (strategy == 'cross_val'):
+            self.cross_val_scores = dict()
+            print('==============================================')
+            print('Evaluation strategy: Cross Validation')
+            print('==============================================')
+            for model in self.models.keys():
+                if model == 'vot':
+                    continue
+                print('    ==> Finding params for ',model)
+                gd = GridSearchCV(self.models[model],self.params[model],cv=10,scoring='neg_root_mean_squared_error')
+                gd.fit(self.scaled_features,self.labels[label_name])
+                print('        Parameters: ',gd.best_params_)
+                self.models[model] = gd.best_estimator_
+                
+                self.cross_val_scores[model] = cross_val_score(self.models[model],self.features,self.labels[label_name],scoring='neg_root_mean_squared_error')
+                print('  Score[',model,']:',self.cross_val_scores[model])
+        elif (strategy == 'leave_one_group_out'):
+            print('==============================================')
+            print('Evaluation strategy: Leave one group out')
+            print('==============================================')
+            
+            logo = LeaveOneGroupOut()
+            logo.get_n_splits(groups=group)
+            
+            
+            for train_index, test_index in logo.split(self.scaled_features,self.labels[label_name],group):
+                #print(test_index)
+                
+                X_train, y_train = self.scaled_features.iloc[train_index],self.labels[label_name][train_index]
+                X_test, y_test = self.scaled_features.iloc[test_index],self.labels[label_name][test_index]
+                
+                for model in self.models.keys():
+                    if model == 'vot':
+                        continue
+                    print('    ==> Finding params for ',model)
+                    gd = GridSearchCV(self.models[model],self.params[model],cv=10,scoring='neg_root_mean_squared_error')
+                    gd.fit(X_train,y_train)
+                    print('        Parameters: ',gd.best_params_)
+                    estimator = gd.best_estimator_
+                    
+                    estimator.fit(X_train,y_train)
+                    
+                    error = mean_squared_error(y_test,estimator.predict(X_test),squared=False)
+                
+                    print('    Model[',model,']:',error)
+                
+                
+                
+        elif (strategy == 'leave_one_dataset_out'):
+            print('==============================================')
+            print('Evaluation strategy: Leave one dataset out')
+            print('==============================================')
+            
+            logo = LeaveOneGroupOut()
+            logo.get_n_splits(groups=group)
+            
+            
+            for train_index, test_index in logo.split(self.scaled_features,self.labels[label_name],group):
+                #print(test_index)
+                
+                X_train, y_train = self.scaled_features.iloc[train_index],self.labels[label_name][train_index]
+                X_test, y_test = self.scaled_features.iloc[test_index],self.labels[label_name][test_index]
+                
+                for model in self.models.keys():
+                    if model == 'vot':
+                        continue
+                    print('    ==> Finding params for ',model)
+                    gd = GridSearchCV(self.models[model],self.params[model],cv=10,scoring='neg_root_mean_squared_error')
+                    gd.fit(X_train,y_train)
+                    print('        Parameters: ',gd.best_params_)
+                    estimator = gd.best_estimator_
+                    
+                    estimator.fit(X_train,y_train)
+                    
+                    error = mean_squared_error(y_test,estimator.predict(X_test),squared=False)
+                
+                    print('    Model[',model,']:',error)
+                
+        elif (strategy=='sorted_stratified')   :
+            # idea from https://scottclowe.com/2016-03-19-stratified-regression-partitions/
+            indices = self.labels.sort_values(by=self.labels[label_name]).index.tolist()
+            splits = dict()
+            
+            for i in range(cv):
+                splits[i] = list()
+                
+            for i in range(len(indices)):
+                if i%cv == 0:
+                    pick = random.sample(range(cv),cv)
+                cur_pick = pick.pop()
+                splits[cur_pick].append(indices[i])
+                
+            for i in range(cv):
+                test_index = splits[i]
+                train_index = []
+                for j in range(cv):
+                    if j != i:
+                        train_index = train_index + splits[j]
+                
+                ##########################################
+                
+                # Code to training model on sorted stratified set
+                
+                ##########################################
+                
+            
+                
+                
+            
         else:
             print('Unsupported evaluation strategy')
             return None
@@ -305,7 +419,7 @@ class EasyRegression:
         self.test_performances = dict()
         print('    ==> Performance on test data ')
         for model in self.models.keys():
-            
-            self.test_performances[model] = mean_squared_error(self.y_test,self.models[model].predict(self.X_test))
+            self.models[model].fit(self.X_train,self.y_train)
+            self.test_performances[model] = mean_squared_error(self.y_test,self.models[model].predict(self.X_test),squared=False)
             print('   Model[',model,']:',self.test_performances[model])
 
