@@ -7,18 +7,35 @@ from sklearn.model_selection import train_test_split
 import math
 
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet, Lars, BayesianRidge, SGDRegressor, RANSACRegressor
+
+# Regression Model
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
+from sklearn.linear_model import Lasso
+from sklearn.linear_model import ElasticNet
+from sklearn.linear_model import Lars
+from sklearn.linear_model import BayesianRidge
+from sklearn.linear_model import SGDRegressor
+from sklearn.linear_model import RANSACRegressor
+
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.tree import DecisionTreeRegressor
+from xgboost import XGBRegressor
 from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsRegressor
-from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, AdaBoostRegressor, GradientBoostingRegressor, VotingRegressor, StackingRegressor
-#from xgboost import XGBRegressor
-#from lightgbm import LGBMRegressor
+
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import AdaBoostRegressor
+from sklearn.ensemble import  ExtraTreesRegressor
+from sklearn.ensemble import   GradientBoostingRegressor
+from sklearn.ensemble import  VotingRegressor
+from sklearn.ensemble import StackingRegressor
+
 from sklearn.neural_network import MLPRegressor
-import statsmodels.api as sm
+
 from sklearn.model_selection import cross_val_score
-from sklearn.ensemble import GradientBoostingClassifier
+
+
 import statistics
 from sklearn.model_selection import cross_validate
 
@@ -38,10 +55,8 @@ from sklearn.preprocessing import MinMaxScaler
 
 
 
-from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.datasets import make_moons, make_circles, make_classification
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
@@ -196,9 +211,9 @@ class EasyRegression:
     def Scaling(self,data,algo):
         if algo in ['std','mmax']:
             if algo == 'std':
-                return self.std.fit_transform(data)
+                return pd.DataFrame(self.std.fit_transform(data), columns=data.columns)
             elif algo == 'mmax':
-                return self.mmax.fit_transform(data)
+                return pd.DataFrame(self.mmax.fit_transform(data), columns=data.columns)
             else:
                 print('Unsupported scaler')
                 return None
@@ -224,12 +239,73 @@ class EasyRegression:
                 self.isomap_features = self.isomap.fit_transform(data)
                 self.tsne_features = self.tsne.fit_transform(data)
 
-                print(self.pca_features)
+    
+    def regressionModelInitialize(self):
+        print('    Preparating Regression Models')
+        self.models = dict()
+        self.params=dict()
         
         
+        self.models['knn'] = KNeighborsRegressor()
+        self.models['rf'] = RandomForestRegressor()
+        self.models['ada'] = AdaBoostRegressor()
+        self.models['gb'] = GradientBoostingRegressor()
+        self.models['xg'] = XGBRegressor()
+        self.models['mlp'] = MLPRegressor()
+        self.models['svm'] = SVR()
+        self.models['vot'] = VotingRegressor([('knn',self.models['knn']),('ada',self.models['ada']),('rand',self.models['rf']),('svm',self.models['svm'])])
+        
+        # Preparing parameter for finding optimal parameters
+        
+        self.params['knn'] ={'n_neighbors':[2,3,4,5],'algorithm':['auto', 'ball_tree', 'kd_tree', 'brute']}
+        self.params['rf'] = {'max_depth':[2,3,4,5,6],'n_estimators':[50,100,150,200],'min_samples_split':[3,4,5]}
+        self.params['ada'] = {'learning_rate':[.01,.001,.0001],'n_estimators':[50,100,150,200],'loss':['linear', 'square', 'exponential']}
+        self.params['gb'] = {'learning_rate':[.01,.001,.0001],'n_estimators':[50,100,150,200],'loss':['ls', 'lad', 'huber', 'quantile'],'min_samples_split':[3,4,5]}
+        self.params['xg']={'booster':['gbtree', 'gblinear','dart'],'max_depth':[2,3,4,5,6]}
+        self.params['mlp']={'solver':['lbfgs'],'activation':['identity', 'logistic', 'tanh', 'relu'],'hidden_layer_sizes':[(5,5),(5,5,5),(5,4,3),(10,10,5)]}
+        k=['rbf', 'linear','poly','sigmoid']
+        c= [1,10,100,.1]
+        g=[.0001,.001,.001,.01,.1]
+        self.params['svm']=dict(kernel=k, C=c, gamma=g)    
+        print('-------------------------------------------')
+        print('  K-Nearest Neighbors initialized')
+        print('  Random Forest initialized')
+        print('  AdaBoost initialized')
+        print('  Gradient Boost initialized')
+        print('  XGBoost initialized')
+        print('  Neural Network initialized')
+        print('  SVM initialized')
+        print('  Voting classifier with KNN, AdaBoost, and Random Forest')
+        print('-------------------------------------------')
+        
+        
+    def findParameters(self,strategy,label_name):
+        if label_name not in self.labels.columns:
+            print('Label does not exists')
+            return None
+        self.scaled_features = self.Scaling(self.features,'std')
+        
+        if (strategy == 'train_test_split'):
+            self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.scaled_features,self.labels[label_name])
             
+        
+            for model in self.models.keys():
+                if model == 'vot':
+                    self.models[model].fit(self.X_train,self.X_test)
+                print('    ==> Finding params for ',model)
+                gd = GridSearchCV(self.models[model],self.params[model],cv=10,scoring='neg_root_mean_squared_error')
+                gd.fit(self.X_train,self.y_train)
+                print('        Parameters: ',gd.best_params_)
+                self.models[model] = gd.best_estimator_
+        else:
+            print('Unsupported evaluation strategy')
+            return None
+        
+    def testPerformance(self):
+        self.test_performances = dict()
+        print('    ==> Performance on test data ')
+        for model in self.models.keys():
             
-        
-        
-        
+            self.test_performances[model] = mean_squared_error(self.y_test,self.models[model].predict(self.X_test))
+            print('   Model[',model,']:',self.test_performances[model])
 
