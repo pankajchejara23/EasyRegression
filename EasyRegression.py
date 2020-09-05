@@ -7,7 +7,8 @@ from sklearn.model_selection import train_test_split
 import math
 from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-
+import traceback
+traceback.print_exc()
 # Regression Model
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
@@ -81,14 +82,69 @@ class EasyRegression:
         self.mmax = MinMaxScaler()
         
         self.random_state = 42
-        
+        self.feature_set = dict()
+        self.label_set = dict()
 
-        
+
+    def loadFeature(self,feature_file,feature_type,feature_name):
+        if feature_type not in ['ind','grp']:
+            print(' Undefined type')
+            return None
+        else:
+            try:
+                
+                if feature_name in self.feature_set.keys():
+                    print('Feature with specified name already exist.')
+                    return None
+                else:
+                    tmp = pd.read_csv(feature_file)
+                    
+                    if len(self.feature_set) > 0:
+                        first_feat = self.feature_set[list(self.feature_set.keys())[0]]
+                        if tmp.shape[0] != first_feat[2].shape[0]:
+                            print('  Error: Mismatch in feature size with previously added feature ',first_feat[1] )
+                            return None
+                        
+                    self.feature_set[feature_name] = [feature_type,feature_name,tmp]
+                    print(' Feature file:',feature_file,' is loaded successfully !')
+                    print(' Summary:')
+                    print('     #instances:',tmp.shape[0])
+                    print('     #arguments:',tmp.shape[1])
+                    print('')
+                    return tmp
+            except:
+                print('  Error occurred while loading the file')
+                traceback.print_exc()
+                
+                
+    def loadLabels(self,label_file):
+        try:
+            tmp = pd.read_csv(label_file)
+            
+            if len(self.feature_set) > 0:
+                first_feat = self.feature_set[list(self.feature_set.keys())[0]]
+                if tmp.shape[0] != first_feat[2].shape[0]:
+                    print('  Error: Mismatch in feature size with loaded feature ',first_feat[1] )
+                    return None
+                
+            for label in tmp.columns:
+                self.label_set[label] = tmp
+            print(' Label file:',label_file,' is loaded successfully !')
+            print(' Summary:')
+            print('     #labels:',len(tmp.columns.tolist()))
+            print('     labels:', tmp.columns.tolist())
+            print('')
+            return tmp
+        except:
+            print(' Error occurred while loading the file:',label_file)
+            traceback.print_exc()
+            return None
+    
 
     """
     loaddata: function to load input data files
     """
-    def loadData(self,features_file,labels_file):
+    def loadIndivData(self,features_file,labels_file):
         try:
             self.features = pd.read_csv(features_file)
             self.labels = pd.read_csv(labels_file)
@@ -108,11 +164,63 @@ class EasyRegression:
 
         except FileNotFoundError:
             print('Specified file do not exists')
-    def getBasicFeatures(self):
-        return self.features
+            
+    def loadOpenSmileData(self,features_file,skip,no_features):
+        try:
+            print('Inside Try')
+            features_names = [None]*no_features
+            for i in range(no_features):
+                features_names[i] = 'feature_' + str(i)
+            
+            self.osFeatures = pd.read_csv(features_file,skiprows = skip,names=features_names)
+            print(' OpenSmile Featues loaded....')
+            self.osFeatures.drop(['feature_0','feature_1583'],axis=1,inplace=True)
     
-    def getLabels(self):
-        return self.labels
+            print('    Instances:',self.osFeatures.shape)
+        except:
+            traceback.print_exc()
+            print('File does not exists')
+            
+            
+
+                
+    def feature_name_check(self,feature_name):
+        if feature_name not in self.feature_set.keys():
+            print(' Feature name:', feature_name,' is not available.')
+            return None
+    
+    def label_name_check(self,label_name):
+        if label_name not in self.label_set.keys():
+            print(' Label name:',label_name,' is not available.')
+            return None
+            
+    
+    def extractFeatures(self,feature_name,cor=.80):
+        print('-------------------------------')
+        print(' STEP : Feature Extraction     ')
+        print('-------------------------------')
+        
+        
+        self.feature_name_check(feature_name)
+        
+        correlated_features = set()
+        features = self.feature_set[feature_name][2]
+        correlation_matrix = features.corr()
+        for i in range(len(correlation_matrix .columns)):
+            for j in range(i):
+                if abs(correlation_matrix.iloc[i, j]) > cor:
+                    colname = correlation_matrix.columns[i]
+                    correlated_features.add(colname)
+        #print('Correlated Features:')
+        #print(correlated_features)
+        
+        features.drop(labels=correlated_features,axis=1,inplace=True)
+        print('===> ',len(correlated_features),' correlated features are removed.')
+        print('===>  Final features shape:',features.shape)
+        
+        return features
+    
+
 
     def findCorrelation(self,label_name=None,sort=True):
         if self.dataReady == False:
@@ -211,13 +319,23 @@ class EasyRegression:
     
     """
     def Scaling(self,data,algo):
+        
+        
+        print('-------------------------------')
+        print(' STEP : Data Scaling')
+        print('-------------------------------')
+        
+        
         if algo in ['std','mmax']:
             if algo == 'std':
-                return pd.DataFrame(self.std.fit_transform(data), columns=data.columns)
+                res = pd.DataFrame(self.std.fit_transform(data), columns=data.columns)
+                print('===> Successfully applied Standard Scaling')
+                return res
             elif algo == 'mmax':
-                return pd.DataFrame(self.mmax.fit_transform(data), columns=data.columns)
+                res =  pd.DataFrame(self.mmax.fit_transform(data), columns=data.columns)
+                print('===> Successfully applied MinMax Scaling')
             else:
-                print('Unsupported scaler')
+                print('===> Error: Unsupported scaling method')
                 return None
             
     def DimRed(self,algo,data,params):
@@ -231,15 +349,25 @@ class EasyRegression:
             else:    
                 # Dimensionality reduction
     
-                self.pca = PCA()
+                self.pca = PCA(.90)
                 self.mds = manifold.MDS(n_components=params['n_components'],max_iter=100,n_init=1)
                 self.isomap = manifold.Isomap(n_neighbors=params['n_neighbors'],n_components=params['n_components'])
                 self.tsne = manifold.TSNE(n_components=params['n_components'],init='pca',random_state=self.random_state)
             
-                self.pca_features = self.pca.fit_transform(data)
-                self.mds_features = self.mds.fit_transform(data)
-                self.isomap_features = self.isomap.fit_transform(data)
-                self.tsne_features = self.tsne.fit_transform(data)
+                if algo == 'pca':
+                    self.pca_features = self.pca.fit_transform(data)
+                    return self.pca_features ;
+                if algo == 'mds':
+                    self.mds_features = self.mds.fit_transform(data)
+                    return self.mds_features ;
+                if algo== 'isomap':
+                    self.isomap_features = self.isomap.fit_transform(data)
+                    return self.isomap_features ;
+                if algo=='tsne':
+                    self.tsne_features = self.tsne.fit_transform(data)
+                    return self.tsne_features ;
+
+            
 
     
     def regressionModelInitialize(self):
@@ -281,12 +409,12 @@ class EasyRegression:
         print('-------------------------------------------')
         
         
-    def findParameters(self,strategy,label_name,group,cv=10):
+    def findParameters(self,strategy,features,label_name,group,cv=10):
         if label_name not in self.labels.columns:
             print('Label does not exists')
             return None
-        self.scaled_features = self.Scaling(self.features,'std')
-        
+        #self.scaled_features = self.Scaling(self.features,'std')
+        self.scaled_features = features
         if (strategy == 'train_test_split'):
             print('==============================================')
             print('  Evaluation strategy: Train and Test Split   ')
@@ -382,7 +510,12 @@ class EasyRegression:
                 
         elif (strategy=='sorted_stratified')   :
             # idea from https://scottclowe.com/2016-03-19-stratified-regression-partitions/
-            indices = self.labels.sort_values(by=self.labels[label_name]).index.tolist()
+            print('==============================================')
+            print('Evaluation strategy: Sorted Stratification')
+            print('==============================================')
+            
+            
+            indices = self.labels.sort_values(by=[label_name]).index.tolist()
             splits = dict()
             
             for i in range(cv):
@@ -404,6 +537,31 @@ class EasyRegression:
                 ##########################################
                 
                 # Code to training model on sorted stratified set
+                X_train, y_train = self.scaled_features.iloc[train_index],self.labels[label_name][train_index]
+                X_test, y_test = self.scaled_features.iloc[test_index],self.labels[label_name][test_index]
+                
+                
+                for model in self.models.keys():
+                    if model == 'vot':
+                        continue
+                    print('    ==> Finding params for ',model)
+                    gd = GridSearchCV(self.models[model],self.params[model],cv=10,scoring='neg_root_mean_squared_error')
+                    gd.fit(X_train,y_train)
+                    print('        Parameters: ',gd.best_params_)
+                    estimator = gd.best_estimator_
+                    
+                    estimator.fit(X_train,y_train)
+                    
+                    error = mean_squared_error(y_test,estimator.predict(X_test),squared=False)
+                
+                    print('    Model[',model,']:',error)
+                
+                
+                
+                
+                
+                
+                
                 
                 ##########################################
                 
