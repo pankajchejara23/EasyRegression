@@ -18,7 +18,7 @@ from sklearn.linear_model import Lars
 from sklearn.linear_model import BayesianRidge
 from sklearn.linear_model import SGDRegressor
 from sklearn.linear_model import RANSACRegressor
-
+from pyfiglet import Figlet
 from sklearn.model_selection import cross_val_score
 
 from sklearn.kernel_ridge import KernelRidge
@@ -72,10 +72,13 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn import metrics
 
 
+from art import *
+
 class EasyRegression:
     def __init__(self):
-        print('EasyRegression is initialized.')
-        self.dataReady = False
+        print(text2art('Easy'))
+        print(text2art('Regression'))
+
         
         # Scalers
         self.std = StandardScaler()
@@ -84,17 +87,26 @@ class EasyRegression:
         self.random_state = 42
         self.feature_set = dict()
         self.label_set = dict()
+        
+        self.groups = None
+        self.datasets = None
+        self.label = None
 
 
     def loadFeature(self,feature_file,feature_type,feature_name):
+        
+        if len(self.feature_set) == 0:
+            print('-------------------------------')
+            print(' STEP : Features loading')
+            print('-------------------------------')
         if feature_type not in ['ind','grp']:
-            print(' Undefined type')
+            print('===> Error: Undefined feature type')
             return None
         else:
             try:
                 
                 if feature_name in self.feature_set.keys():
-                    print('Feature with specified name already exist.')
+                    print('===> Feature with name ',feature_name,' already exist. Choose a different name')
                     return None
                 else:
                     tmp = pd.read_csv(feature_file)
@@ -102,18 +114,20 @@ class EasyRegression:
                     if len(self.feature_set) > 0:
                         first_feat = self.feature_set[list(self.feature_set.keys())[0]]
                         if tmp.shape[0] != first_feat[2].shape[0]:
-                            print('  Error: Mismatch in feature size with previously added feature ',first_feat[1] )
+                            print('===> Error: Mismatch in feature size with previously added features ',first_feat[1] )
                             return None
                         
                     self.feature_set[feature_name] = [feature_type,feature_name,tmp]
-                    print(' Feature file:',feature_file,' is loaded successfully !')
-                    print(' Summary:')
+                    print('===> Feature file:',feature_file,' is loaded successfully !')
+                    print('===> Summary:')
                     print('     #instances:',tmp.shape[0])
-                    print('     #arguments:',tmp.shape[1])
+                    print('     #attributes:',tmp.shape[1])
+                    num_cols = tmp.select_dtypes(['int64','float64'])
+                    print('     #numeric-attributes:',num_cols.shape[1])
                     print('')
-                    return tmp
+                    return num_cols
             except:
-                print('  Error occurred while loading the file')
+                print('===> Error occurred while loading the file')
                 traceback.print_exc()
                 
                 
@@ -128,15 +142,15 @@ class EasyRegression:
                     return None
                 
             for label in tmp.columns:
-                self.label_set[label] = tmp
-            print(' Label file:',label_file,' is loaded successfully !')
-            print(' Summary:')
+                self.label_set[label] = tmp[label]
+            print('===> Label file:',label_file,' is loaded successfully !')
+            print('===> Summary:')
             print('     #labels:',len(tmp.columns.tolist()))
             print('     labels:', tmp.columns.tolist())
             print('')
             return tmp
         except:
-            print(' Error occurred while loading the file:',label_file)
+            print('===> Error occurred while loading the file:',label_file)
             traceback.print_exc()
             return None
     
@@ -195,16 +209,16 @@ class EasyRegression:
             return None
             
     
-    def extractFeatures(self,feature_name,cor=.80):
+    def extractFeatures(self,data,cor=.80):
         print('-------------------------------')
         print(' STEP : Feature Extraction     ')
         print('-------------------------------')
         
         
-        self.feature_name_check(feature_name)
+        
         
         correlated_features = set()
-        features = self.feature_set[feature_name][2]
+        features = data
         correlation_matrix = features.corr()
         for i in range(len(correlation_matrix .columns)):
             for j in range(i):
@@ -253,34 +267,42 @@ class EasyRegression:
         This function performs group-level feature computation
         supported fusions: Dimensionality reduction, Entropy, Gini, Average
     """
-    def getGroupFeatures(self):
+    def getGroupFeatures(self,data):
+        
+        
         group_feature_labels = ['add','del','speak','turns']
-        self.features_group = dict()
+        
+        features_group = dict()
         # iterate for each group-level feature 
         for grp_feature in group_feature_labels:
             
             tmp = list()
             
             # get all column names similar to grp_feature
-            for indiv_feature in self.features.columns:
+            for indiv_feature in data.columns:
                 if grp_feature in indiv_feature:
                     tmp.append(indiv_feature)
             
-            self.features_group[grp_feature] = tmp.copy()
+            features_group[grp_feature] = tmp.copy()
         
-        print(self.features_group)
+        return features_group
         
     
     # preparing gini coefficient
-    def getGINI(self):
+    def getGINI(self,data):
         """Calculate the Gini coefficient of a numpy array."""
         
-        self.getGroupFeatures()
+        print('-------------------------------')
+        print(' STEP : Feature Fusion using Gini')
+        print('-------------------------------')
+        group_features = self.getGroupFeatures(data)
+        
+        
         gini = dict()
-        for key in self.features_group.keys():
- 
+        for key in group_features.keys():
             
-            tmp = self.features[self.features_group[key]].values
+            
+            tmp = data[group_features[key]].values
             tmp = tmp + 0.0000001 
             tmp = np.sort(tmp)
             index =  np.arange(1,tmp.shape[1]+1) 
@@ -291,17 +313,20 @@ class EasyRegression:
             key = 'grp_gini_'+key
             gini[key] = ((np.sum((2 * index - n  - 1) * tmp,axis=1)) / (n * np.sum(tmp,axis=1))) #Gini coefficient
         
-        self.gini_features = pd.DataFrame(gini)
-        return self.gini_features
+        gini_features = pd.DataFrame(gini)
+        return gini_features
     
 
 
     # Compute entropy features for individual features
-    def getEntropy(self):
-        self.getGroupFeatures()
+    def getEntropy(self,data):
+        print('-------------------------------')
+        print(' STEP : Feature Fusion using Entropy')
+        print('-------------------------------')
+        group_features = self.getGroupFeatures(data)
         entropy = dict()
-        for key in self.features_group.keys():      
-            tmp = self.features[self.features_group[key]].values
+        for key in group_features.keys():      
+            tmp = data[group_features[key]].values
             tmp = tmp
             tmp_sum = tmp.sum(axis=1,keepdims=True) + .0000000000001
             p = tmp/tmp_sum
@@ -309,8 +334,8 @@ class EasyRegression:
             key = 'grp_entropy_'+key
             entropy[key] = entr(p).sum(axis=1)/np.log(2)
   
-        self.entropy_features = pd.DataFrame(entropy)
-        return self.entropy_features
+        entropy_features = pd.DataFrame(entropy)
+        return entropy_features
     
     
     """
@@ -322,7 +347,7 @@ class EasyRegression:
         
         
         print('-------------------------------')
-        print(' STEP : Data Scaling')
+        print(' STEP : Feature Scaling')
         print('-------------------------------')
         
         
@@ -334,17 +359,21 @@ class EasyRegression:
             elif algo == 'mmax':
                 res =  pd.DataFrame(self.mmax.fit_transform(data), columns=data.columns)
                 print('===> Successfully applied MinMax Scaling')
+                return res
             else:
                 print('===> Error: Unsupported scaling method')
                 return None
             
     def DimRed(self,algo,data,params):
+        print('-------------------------------')
+        print(' STEP : Feature fusion using DimRed')
+        print('-------------------------------')
         if algo not in ['pca','mds','isomap','t-sne']:
-            print('Unsupported dimension reduction algorithm specified')
+            print('===> Erro: Unsupported dimension reduction algorithm specified')
             return None
         else:
             if algo!='pca' and len(params) ==0:
-                print('Specify n_components/n_neighbors parameters')
+                print('===> Error: Specify n_components/n_neighbors parameters')
                 return None
             else:    
                 # Dimensionality reduction
@@ -355,23 +384,45 @@ class EasyRegression:
                 self.tsne = manifold.TSNE(n_components=params['n_components'],init='pca',random_state=self.random_state)
             
                 if algo == 'pca':
-                    self.pca_features = self.pca.fit_transform(data)
-                    return self.pca_features ;
+                    pca_features = self.pca.fit_transform(data)
+                    print('===> Successfully applied PCA')
+                    pca_columns = [None] * pca_features.shape[1]
+                    for k in range(pca_features.shape[1]):
+                        pca_columns[k] = 'pca_' + str(k)
+                    
+                    return pd.DataFrame(pca_features,columns=pca_columns) 
                 if algo == 'mds':
-                    self.mds_features = self.mds.fit_transform(data)
-                    return self.mds_features ;
+                    mds_features = self.mds.fit_transform(data)
+                    mds_columns = [None] * mds_features.shape[1]
+                    for k in range(mds_features.shape[1]):
+                        mds_columns[k] = 'mds_' + str(k)
+                    print('===> Successfully applied MDS')
+                    
+                    return pd.DataFrame(mds_features,columns=mds_columns) 
+                
                 if algo== 'isomap':
-                    self.isomap_features = self.isomap.fit_transform(data)
-                    return self.isomap_features ;
+                    isomap_features = self.isomap.fit_transform(data)
+                    print('===> Successfully applied ISOMAP')
+                    isomap_columns = [None] * isomap_features.shape[1]
+                    for k in range(isomap_features.shape[1]):
+                        isomap_columns[k] = 'iso_' + str(k)
+                    return pd.DataFrame(isomap_features,columns=isomap_columns) 
                 if algo=='tsne':
-                    self.tsne_features = self.tsne.fit_transform(data)
-                    return self.tsne_features ;
+                    tsne_features = self.tsne.fit_transform(data)
+                    print('===> Successfully applied t-SNE')
+                    tsne_columns = [None] * tsne_features.shape[1]
+                    for k in range(isomap_features.shape[1]):
+                        tsne_columns[k] = 'tsne_' + str(k)
+                    return pd.DataFrame(tsne_features,columns=tsne_columns)  ;
 
             
 
     
     def regressionModelInitialize(self):
-        print('    Preparating Regression Models')
+        print('-------------------------------')
+        print(' STEP : Regression Moduel Initialised')
+        print('-------------------------------')
+        
         self.models = dict()
         self.params=dict()
         
@@ -391,47 +442,54 @@ class EasyRegression:
         self.params['rf'] = {'max_depth':[2,3,4,5,6],'n_estimators':[50,100,150,200],'min_samples_split':[3,4,5]}
         self.params['ada'] = {'learning_rate':[.01,.001,.0001],'n_estimators':[50,100,150,200],'loss':['linear', 'square', 'exponential']}
         self.params['gb'] = {'learning_rate':[.01,.001,.0001],'n_estimators':[50,100,150,200],'loss':['ls', 'lad', 'huber', 'quantile'],'min_samples_split':[3,4,5]}
-        self.params['xg']={'booster':['gbtree', 'gblinear','dart'],'max_depth':[2,3,4,5,6]}
-        self.params['mlp']={'solver':['lbfgs','sgd','adam'],'activation':['identity', 'logistic', 'tanh', 'relu'],'hidden_layer_sizes':[(5,5),(5,5,5),(5,4,3),(10,10,5)],'max_iter':[1000]}
+        self.params['xg']={'booster':['gbtree', 'gblinear','dart']}
+        self.params['mlp']={'solver':['lbfgs','sgd','adam'],'activation':['identity', 'logistic', 'tanh', 'relu'],'hidden_layer_sizes':[(5,5,5),(5,4,3),(10,10,5)]}
         k=['rbf', 'linear','poly','sigmoid']
         c= [1,10,100,.1]
         g=[.0001,.001,.001,.01,.1]
         self.params['svm']=dict(kernel=k, C=c, gamma=g)    
         print('-------------------------------------------')
-        print('  K-Nearest Neighbors initialized')
-        print('  Random Forest initialized')
-        print('  AdaBoost initialized')
-        print('  Gradient Boost initialized')
-        print('  XGBoost initialized')
-        print('  Neural Network initialized')
-        print('  SVM initialized')
-        print('  Voting classifier with KNN, AdaBoost, and Random Forest')
+        print('===> K-Nearest Neighbors initialized')
+        print('===> Random Forest initialized')
+        print('===> AdaBoost initialized')
+        print('===> Gradient Boost initialized')
+        print('===> XGBoost initialized')
+        print('===> Neural Network initialized')
+        print('===> SVM initialized')
+        print('===> Voting classifier with KNN, AdaBoost, SVM and Random Forest')
         print('-------------------------------------------')
         
         
-    def findParameters(self,strategy,features,label_name,group,cv=10):
-        if label_name not in self.labels.columns:
-            print('Label does not exists')
-            return None
-        #self.scaled_features = self.Scaling(self.features,'std')
-        self.scaled_features = features
+    def findParametersAndEvaluate(self,data,strategy,label_name,group=None,cv=10):
+        print('-------------------------------')
+        print(' STEP : Finding Parameters & Evaluate Models')
+        print('-------------------------------')
+        self.label_name_check(label_name)
+        #print(self.labelset.columns)
         if (strategy == 'train_test_split'):
-            print('==============================================')
-            print('  Evaluation strategy: Train and Test Split   ')
-            print('==============================================')
-            self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.scaled_features,self.labels[label_name])
+            print('===> Evaluation strategy: Train and Test Split   ')
+            X_train, X_test, y_train, y_test = train_test_split(data,self.label_set[label_name])
             
-        
+            print('===> Parameters find-> Start')
             for model in self.models.keys():
                 if model == 'vot':
                     continue
-                print('    ==> Finding params for ',model)
+                
                 gd = GridSearchCV(self.models[model],self.params[model],cv=10,scoring='neg_root_mean_squared_error')
-                gd.fit(self.X_train,self.y_train)
-                print('        Parameters: ',gd.best_params_)
+                gd.fit(X_train,y_train)
+                print('       Parameters for ',model,': ',gd.best_params_)
                 self.models[model] = gd.best_estimator_
+            print('===> Parameters find-> End')   
+            test_performances = dict()
+            print('===> Test data performance[RMSE] ')
+            for model in self.models.keys():
+                self.models[model].fit(X_train,y_train)
+                test_performances[model] = mean_squared_error(y_test,self.models[model].predict(X_test),squared=False)
+                print('       Model[',model,']:',test_performances[model])
+            return test_performances
+        
         elif (strategy == 'cross_val'):
-            self.cross_val_scores = dict()
+            cross_val_scores = dict()
             print('==============================================')
             print('Evaluation strategy: Cross Validation')
             print('==============================================')
@@ -440,41 +498,55 @@ class EasyRegression:
                     continue
                 print('    ==> Finding params for ',model)
                 gd = GridSearchCV(self.models[model],self.params[model],cv=10,scoring='neg_root_mean_squared_error')
-                gd.fit(self.scaled_features,self.labels[label_name])
+                gd.fit(data,self.label_set[label_name])
                 print('        Parameters: ',gd.best_params_)
                 self.models[model] = gd.best_estimator_
                 
-                self.cross_val_scores[model] = cross_val_score(self.models[model],self.features,self.labels[label_name],scoring='neg_root_mean_squared_error')
-                print('  Score[',model,']:',self.cross_val_scores[model])
+                cross_val_scores[model] = cross_val_score(self.models[model],data,self.label_set[label_name],scoring='neg_root_mean_squared_error',cv=cv)
+                print('  Score[',model,']:',cross_val_scores[model])
+            return cross_val_scores
+        
+        
         elif (strategy == 'leave_one_group_out'):
             print('==============================================')
             print('Evaluation strategy: Leave one group out')
             print('==============================================')
             
             logo = LeaveOneGroupOut()
-            logo.get_n_splits(groups=group)
+            n_splits = logo.get_n_splits(groups=group)
             
+            error= dict()
             
-            for train_index, test_index in logo.split(self.scaled_features,self.labels[label_name],group):
+            for model in self.models.keys():
+                error[model] = [None]*n_splits
+            
+            k =0
+            for train_index, test_index in logo.split(data,self.label_set[label_name],group):
                 #print(test_index)
                 
-                X_train, y_train = self.scaled_features.iloc[train_index],self.labels[label_name][train_index]
-                X_test, y_test = self.scaled_features.iloc[test_index],self.labels[label_name][test_index]
+                X_train, y_train = data.iloc[train_index],self.label_set[label_name][train_index]
+                X_test, y_test = data.iloc[test_index],self.label_set[label_name][test_index]
                 
                 for model in self.models.keys():
-                    if model == 'vot':
-                        continue
-                    print('    ==> Finding params for ',model)
-                    gd = GridSearchCV(self.models[model],self.params[model],cv=10,scoring='neg_root_mean_squared_error')
-                    gd.fit(X_train,y_train)
-                    print('        Parameters: ',gd.best_params_)
-                    estimator = gd.best_estimator_
+                    if model != 'vot':
+                        
+                        print('    ==> Finding params for ',model)
+                        gd = GridSearchCV(self.models[model],self.params[model],cv=10,scoring='neg_root_mean_squared_error')
+                        gd.fit(X_train,y_train)
+                        print('        Parameters: ',gd.best_params_)
+                        estimator = gd.best_estimator_
+                        
+                        
                     
-                    estimator.fit(X_train,y_train)
-                    
-                    error = mean_squared_error(y_test,estimator.predict(X_test),squared=False)
+                        self.models[model] = estimator
+                        
+                    self.models[model].fit(X_train,y_train)
+                    error[model][k]  = mean_squared_error(y_test,self.models[model].predict(X_test),squared=False)
                 
-                    print('    Model[',model,']:',error)
+                    print('    Model[',model,']:',error[model])
+                    
+                k = k+1
+                return error[model]
                 
                 
                 
@@ -484,29 +556,39 @@ class EasyRegression:
             print('==============================================')
             
             logo = LeaveOneGroupOut()
-            logo.get_n_splits(groups=group)
+            n_splits = logo.get_n_splits(groups=group)
+            
+            error= dict()
+            
+            for model in self.models.keys():
+                error[model] = [None]*n_splits
+            
+            k =0
             
             
-            for train_index, test_index in logo.split(self.scaled_features,self.labels[label_name],group):
+            for train_index, test_index in logo.split(data,self.label_set[label_name],group):
                 #print(test_index)
                 
-                X_train, y_train = self.scaled_features.iloc[train_index],self.labels[label_name][train_index]
-                X_test, y_test = self.scaled_features.iloc[test_index],self.labels[label_name][test_index]
+                X_train, y_train = data.iloc[train_index],self.label_set[label_name][train_index]
+                X_test, y_test = data.iloc[test_index],self.label_set[label_name][test_index]
                 
                 for model in self.models.keys():
                     if model == 'vot':
-                        continue
-                    print('    ==> Finding params for ',model)
-                    gd = GridSearchCV(self.models[model],self.params[model],cv=10,scoring='neg_root_mean_squared_error')
-                    gd.fit(X_train,y_train)
-                    print('        Parameters: ',gd.best_params_)
-                    estimator = gd.best_estimator_
+                        
+                        print('    ==> Finding params for ',model)
+                        gd = GridSearchCV(self.models[model],self.params[model],cv=10,scoring='neg_root_mean_squared_error')
+                        gd.fit(X_train,y_train)
+                        print('        Parameters: ',gd.best_params_)
+                        estimator = gd.best_estimator_
                     
-                    estimator.fit(X_train,y_train)
+                        self.models[model] = estimator
                     
-                    error = mean_squared_error(y_test,estimator.predict(X_test),squared=False)
+                    self.models[model].fit(X_train,y_train)
+                    
+                    error[model][k] = mean_squared_error(y_test,self.models[model].predict(X_test),squared=False)
                 
-                    print('    Model[',model,']:',error)
+                    print('    Model[',model,']:',error[model])
+                return error
                 
         elif (strategy=='sorted_stratified')   :
             # idea from https://scottclowe.com/2016-03-19-stratified-regression-partitions/
@@ -515,9 +597,10 @@ class EasyRegression:
             print('==============================================')
             
             
-            indices = self.labels.sort_values(by=[label_name]).index.tolist()
+            indices = self.label_set.sort_values(by=[label_name]).index.tolist()
             splits = dict()
             
+            error = dict()
             for i in range(cv):
                 splits[i] = list()
                 
@@ -537,24 +620,28 @@ class EasyRegression:
                 ##########################################
                 
                 # Code to training model on sorted stratified set
-                X_train, y_train = self.scaled_features.iloc[train_index],self.labels[label_name][train_index]
-                X_test, y_test = self.scaled_features.iloc[test_index],self.labels[label_name][test_index]
+                X_train, y_train = data.iloc[train_index],self.label_set[label_name][train_index]
+                X_test, y_test = data.iloc[test_index],self.label_set[label_name][test_index]
                 
                 
                 for model in self.models.keys():
-                    if model == 'vot':
-                        continue
-                    print('    ==> Finding params for ',model)
-                    gd = GridSearchCV(self.models[model],self.params[model],cv=10,scoring='neg_root_mean_squared_error')
-                    gd.fit(X_train,y_train)
-                    print('        Parameters: ',gd.best_params_)
-                    estimator = gd.best_estimator_
+                    if model != 'vot':
+                        
+                        print('    ==> Finding params for ',model)
+                        gd = GridSearchCV(self.models[model],self.params[model],cv=10,scoring='neg_root_mean_squared_error')
+                        gd.fit(X_train,y_train)
+                        print('        Parameters: ',gd.best_params_)
+                        estimator = gd.best_estimator_
+                        self.models[model] = estimator
                     
-                    estimator.fit(X_train,y_train)
                     
-                    error = mean_squared_error(y_test,estimator.predict(X_test),squared=False)
+                    self.models[model].fit(X_train,y_train)
+                    
+                    error[model] = mean_squared_error(y_test,self.models[model].predict(X_test),squared=False)
                 
-                    print('    Model[',model,']:',error)
+                    print('    Model[',model,']:',error[model])
+                
+                return error
                 
                 
                 
@@ -572,12 +659,104 @@ class EasyRegression:
         else:
             print('Unsupported evaluation strategy')
             return None
+      
+    def activateGroups(self,groups):
+        self.groups = groups
         
-    def testPerformance(self):
-        self.test_performances = dict()
-        print('    ==> Performance on test data ')
-        for model in self.models.keys():
-            self.models[model].fit(self.X_train,self.y_train)
-            self.test_performances[model] = mean_squared_error(self.y_test,self.models[model].predict(self.X_test),squared=False)
-            print('   Model[',model,']:',self.test_performances[model])
+    def activateDatasets(self,datasets):
+        self.datasets = datasets
+        
+    def activateLabel(self,label):
+        self.label = label
+     
+    def buildPipeline(self,sequence):
+        """
+        <feature_name> : Name of feature
+        feature_extraction: Apply feature extraction based on correlation
+        feature_scaling: Apply feature scaling. Options: Standard, MinMax
+        feature_fusion:  Apply feature fusion. Options: gini, entropy, pca, isomap, mds, tsne
+        load_models: Load regression models.
+        find_evaluate: Model evaluation. Options: train_test_split, cross_validation, leave_one_group_out, leave_one_dataset_out, sorted_stratified
+        report_results: Report results. Options: table, chart
+      
 
+        """
+        currentOutput = None
+        
+        for index, step in enumerate(sequence):
+            
+            
+            label = self.label
+            groups = self.groups
+            datasets = self.datasets
+            
+            if index == 0:
+                self.feature_name_check(step)
+                currentOutput = self.feature_set[step][2]
+                print(currentOutput)
+            
+            elif step == 'feature_extration':
+                
+                results = self.extractFeatures(currentOutput)
+                currentOutput = results
+            elif step == 'feature_scaling_std':
+                print(currentOutput.shape)
+                results = self.Scaling(currentOutput,'std')
+                currentOutput = results
+            elif step == 'feature_scaling_mmax':
+                
+                results = self.Scaling(currentOutput,'mmax')
+                currentOutput = results
+            elif step == 'feature_fusion_pca':
+                
+                results = self.DimRed('pca',currentOutput,{'n_components':2,'n_neighbors':3})
+                currentOutput = results
+            elif step == 'feature_fusion_mds':
+                
+                results = self.DimRed('mds',currentOutput,{'n_components':2,'n_neighbors':3})
+                currentOutput = results
+            elif step == 'feature_fusion_isomap':
+                
+                results = self.DimRed('isomap',currentOutput,{'n_components':2,'n_neighbors':3})
+                currentOutput = results
+            elif step == 'feature_fusion_tsne':
+                
+                results = self.DimRed('tsne',currentOutput,{'n_components':2,'n_neighbors':3})
+                currentOutput = results
+            elif step == 'load_modules':
+                self.regressionModelInitialize()
+            
+            elif step == 'evaluate_train_test':
+                if label == None:
+                    print(' ====> Error: labels are not loaded')
+                  
+                results =self.findParametersAndEvaluate(currentOutput,'train_test_split',label,groups)
+                currentOutput = results
+            elif step == 'evaluate_cross_val':
+                if label == None:
+                    print(' ====> Error: labels are not loaded')
+                
+                results =self.findParametersAndEvaluate(currentOutput,'cross_val',label,groups)
+                currentOutput = results
+            elif step == 'evaluate_leave_group_out':
+                if label == None:
+                    print(' ====> Error: labels are not loaded')
+                
+                if groups == None:
+                    print(' ====> Error: groups ids are not loaded')
+                results =self.findParametersAndEvaluate(currentOutput,'leave_one_group_out',label,groups)
+                currentOutput = results
+            elif step == 'evaluate_leave_dataset_out':
+                if label == None:
+                    print(' ====> Error: labels are not loaded')
+                
+                if datasets == None:
+                    print(' ====> Error: datasets ids are not loaded')
+                results =self.findParametersAndEvaluate(currentOutput,'leave_one_dataset_out',label,groups)
+                currentOutput = results
+            elif step == 'evaluate_stratified':
+                if label == None:
+                    print(' ====> Error: labels are not loaded')
+                
+                results =self.findParametersAndEvaluate(currentOutput,'sorted_stratified',label,groups)
+                currentOutput = results
