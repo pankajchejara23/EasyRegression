@@ -73,7 +73,7 @@ obj.buildPipeline(['Open_smile','feature_scaling_std','feature_fusion_pca','load
 - `feature_extraction` : this module will extract and return uncorrelated features.
 - `feature_scaling_std`: this module will standardise the data.
 - `feature_scaling_mmax`: this module will perform min-max scaling
-- `feature_fusion_pca`: this module apply PCA and return PCA-components that explains 90% or more variance in the data.
+- `feature_fusion_pca`: this module applies PCA and return PCA-components that explains 90% or more variance in the data.
 - `feature_fusion_mds`: this module applies MDS dimensionality reduction.
 - `feature_fusion_isomap`: this module applies Isomap dimensionality reduction.
 - `feature_fusion_tsne`: this module applies t-SNE dimensionality reduction.
