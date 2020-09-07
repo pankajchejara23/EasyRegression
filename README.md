@@ -62,7 +62,7 @@ As it can be seen that in our label file there are multiple labels therefore we 
 # Activate `final` variable as target variable
 obj.activateLabel('final')
 ```
-Now, we will build our pipeline for regression analysis. Here, we need to specify operations that we want to perform on the data.
+Now, we will build our pipeline for regression analysis. Here, we need to specify modules that we want to apply on the data.
 ```python
 # Build pipeline
 obj.buildPipeline(['Open_smile','feature_scaling_std','feature_fusion_pca','load_modules','evaluate_train_test'])
@@ -90,7 +90,7 @@ obj.buildPipeline(['Open_smile','feature_scaling_std','feature_fusion_pca','load
 At the moment, the configuration options are not supported for above mentioned modules. The support will be added later.
 
 
-##MIT License
+## MIT License
 
 Copyright (c) 2020 Pankaj Chejara
 
