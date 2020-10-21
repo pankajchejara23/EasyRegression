@@ -1,0 +1,65 @@
+frame,start,end,SMU,CF,KE,ARG,STR,CO,u1,u2,u3,u4,notes
+1,00:00:00,00:00:30,1,1,2,2,2,1,2,2,2,1,user 2 says they can start from the outline and says that user 4 should take the paper to start drawing
+2,00:00:30,00:01:00,2,2,2,0,2,1,2,2,2,2,user 2 says just draw smth
+3,00:01:00,00:01:30,-1,2,1,1,1,0,2,2,2,2,user 2 and 3 almost started arguing :)
+4,00:01:30,00:02:00,2,1,1,1,-2,1,2,2,2,2,
+5,00:02:00,00:02:30,1,1,2,0,1,1,2,2,1,2,user 3 talks about where her ruler is
+6,00:02:30,00:03:00,1,-2,0,0,1,1,-2,1,-2,2,"user 1,2 and 3 are slightly distracted"
+7,00:03:00,00:03:30,1,-1,1,1,-2,-1,2,2,2,2,user 3: let´s just say the same
+8,00:03:30,00:04:00,2,2,2,2,1,1,2,2,2,2,"all engaged, slight argument, but nothing mean :) they are sort of planning without verbalising it; I do not knwo whether they were actually listening to one another"
+9,00:04:00,00:04:30,2,2,2,2,-2,1,2,2,2,2,user 2 and 3 apologising
+10,00:04:30,00:05:00,-1,-1,1,0,-2,1,1,2,2,2,
+11,00:05:00,00:05:30,2,1,2,1,1,1,1,2,2,2,"they wanted to share roles, but users 4 and 2 reminded others to do it collaboratively; they made sure everyone understood how they are going to proceed"
+12,00:05:30,00:06:00,2,1,2,0,1,0,2,2,2,1,"user 3 says she is confused, but noone really reacts; user 3 and 2 at times overlap"
+13,00:06:00,00:06:30,2,2,2,1,1,1,2,2,1,2,"user 1 says they need the function (they need to start discussing this issue), asks who wants to write it?;"
+14,00:06:30,00:07:00,2,-2,0,0,0,1,-2,-2,-1,-1,all group off topic
+15,00:07:00,00:07:30,2,1,2,2,2,1,2,2,2,1,user 1 asks whether the others also remember things the same way she does
+16,00:07:30,00:08:00,-2,1,1,-1,-2,-2,2,2,2,1,"user 1 disagrees, but user 3 dismisses her fast; I would say that needs to be -2 for SMU and -1 for ARG, as here a question was asked and then very briefly answered, so practically dismissed, this is also the reason for giving -2 for CO; user 1 has trouble with the computer, asks user 2 for help"
+17,00:08:00,00:08:30,1,-1,2,1,-2,0,2,-2,-1,2,"user 2 starts talking about the lights on the Raspberry Pi, thus -1 for CF, I would say that it did disturb the flow of the collaboration, user 4 starts talking actively,  user 2 starts distracting with the lights"
+18,00:08:30,00:09:00,1,0,1,0,1,0,2,2,0,0,"user 1 reads out the task (structure), they were conscerned about the lights being off, but went back to the task quite swiftly"
+19,00:09:00,00:09:30,2,2,2,0,1,1,2,2,1,2,"user 1 seems to have taken on a more dominant role in the group; although user 3 did not say much, she still seemed to be very actively listening and moving her mouth :) and that is why I put down 2 points for CF"
+20,00:09:30,00:10:00,2,-1,2,0,1,2,1,1,-2,2,"user 2 tells user 4 that he can write it; user 3 off topic; user 1 encouraged user 4 by saying that yes, we should put that down, you should write it."
+21,00:10:00,00:10:30,1,1,2,0,2,2,2,2,2,2,"they noticed that there had been added two differetn concepts to on table, so they separated them, user 1 said- yeah, let´s do that, it is much better and I considered it as planning :) "
+22,00:10:30,00:11:00,1,1,2,0,1,2,2,2,2,1,user 4 seems to be between being idle and listening
+23,00:11:00,00:11:30,1,1,1,1,0,1,2,2,2,1,user 3 pointed out that they were doing something extra that was not put down in the task
+24,00:11:30,00:12:00,2,1,2,0,-2,1,2,2,2,1,
+25,00:12:00,00:12:30,2,1,1,1,1,1,2,2,2,1,"user 1 said that they were forgetting about smth, thus ARG 2 and planning 1"
+26,00:12:30,00:13:00,1,2,2,1,2,1,2,2,2,1,user 1 says we should probably move on
+27,00:13:00,00:13:30,2,2,1,1,-2,2,2,2,2,2,user 4 woke up :)
+28,00:13:30,00:14:00,1,1,2,1,-2,0,2,2,1,1,user 1 is the one mostly talking
+29,00:14:00,00:14:30,1,2,1,1,1,1,2,2,2,2,who wants to write that? I would put that under slight planning :)
+30,00:14:30,00:15:00,2,0,2,0,1,0,2,2,2,1,let´s look it up- again under planning
+31,00:15:00,00:15:30,1,2,2,1,2,1,2,2,2,2,let´s move on
+32,00:15:30,00:16:00,2,-1,0,1,-2,-1,2,2,2,1,
+33,00:16:00,00:16:30,2,2,2,2,-2,1,2,2,2,2,"everyone is involved, but they are even talkning over one another at times"
+34,00:16:30,00:17:00,-1,-2,0,1,-2,-1,2,1,1,2,
+35,00:17:00,00:17:30,2,1,2,2,-2,1,2,2,2,1,they were really questioning one another´s knowledge and actually discussing
+36,00:17:30,00:18:00,2,1,2,1,1,2,2,2,2,1,let´s think
+37,00:18:00,00:18:30,2,0,1,0,-2,2,2,2,1,1,user 1 came to the conclusion but she did not really make sure others were following her
+38,00:18:30,00:19:00,2,1,2,2,-2,1,2,2,2,1,"user 3 asked a question, user 1 answered and elaborated "
+39,00:19:00,00:19:30,1,1,0,1,1,1,2,2,2,1,"they are having slight trouble with Etherpad, but I would still say it is task-related "
+40,00:19:30,00:20:00,2,0,2,0,-2,1,2,2,2,2,
+41,00:20:00,00:20:30,2,1,2,1,1,1,2,2,2,2,we need to draw a diagram- planning
+42,00:20:30,00:21:00,1,1,1,1,1,1,2,2,2,2,"draw a sugar, draw glucose- planning"
+43,00:21:00,00:21:30,2,1,2,1,-2,2,2,2,2,2,
+44,00:21:30,00:22:00,2,0,2,2,-2,1,2,2,1,2,"user 1 is explaining things to user 2, she is clearly listening and saying yeah- thus smu 2"
+45,00:22:00,00:22:30,1,1,2,2,1,1,2,2,1,2,we have to use these words- planning
+46,00:22:30,00:23:00,1,1,1,-2,2,0,2,2,1,2,did you write.. planning; let him do his thing- discussion suppressed
+47,00:23:00,00:23:30,2,2,2,1,-2,1,2,2,2,2,
+48,00:23:30,00:24:00,2,1,2,1,-2,2,2,2,2,2,"slightly off-topic, but also not, kind of connecting to one another and to previous contexts"
+49,00:24:00,00:24:30,2,1,2,1,-2,1,2,2,1,2,
+50,00:24:30,00:25:00,0,1,2,0,1,1,2,2,2,2,should we write it? how far are you now?
+51,00:25:00,00:25:30,1,1,1,1,2,-1,2,2,2,2,user 2 is clearly dominating
+52,00:25:30,00:26:00,2,-1,0,0,-2,1,-2,-1,-1,2,i think we are talking a bit too loud
+53,00:26:00,00:26:30,0,0,1,0,2,1,2,2,2,2,the last one
+54,00:26:30,00:27:00,1,-1,1,1,-2,1,2,2,2,2,
+55,00:27:00,00:27:30,2,2,2,1,1,2,2,2,2,2,are we done? we can do it all together
+56,00:27:30,00:28:00,2,1,2,1,-2,2,2,2,2,2,"they were really elaborating on the train of thought they were having, user 4 was not looking, but he seemed to pay attention"
+57,00:28:00,00:28:30,1,0,2,0,-2,1,1,2,1,2,parallel dialogue for a very short while
+58,00:28:30,00:29:00,2,1,2,2,-2,1,2,2,0,2,user 3 out
+59,00:29:00,00:29:30,2,0,2,1,2,1,2,2,1,1,
+60,00:29:30,00:30:00,1,0,1,1,1,0,1,2,1,0,"user 2 thinking and explaining, but are the others really thinking with her?"
+61,00:30:00,00:30:30,2,1,2,1,1,-1,2,2,1,2,"user 3 not part of the discussion, motivation questionable"
+62,00:30:30,00:31:00,1,1,2,1,-2,1,2,2,1,1,"user 3 talked, but just to be excused for not knowing smth"
+63,00:31:00,00:31:30,2,0,2,0,2,0,2,2,1,2,
+64,00:31:30,00:32:00,1,1,1,1,0,1,2,2,1,1,remarkable how they immediately started discussing some matter from the worksheet when I showed up :D

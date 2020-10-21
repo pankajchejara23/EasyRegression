@@ -15,6 +15,15 @@ from sklearn.metrics import mean_squared_error
 c1v4 = pd.read_csv('coder1final.csv')
 c2v4 = pd.read_csv('coder2final.csv')
 
+def getFinal(c):
+    return c['ARG'] + c['CO'] + c['CF'] + c['STR'] + c['SMU'] + c['KE'] + (c['u1']+c['u2']+c['u3']+c['u4'])/4
+
+
+c1v4['final'] = getFinal(c1v4)
+c2v4['final']  = getFinal(c2v4)
+
+
+
 # function to compute RMSE dimension wise
 def getRMSE(c1,c2,dim):
     if dim=="ITO":
@@ -29,7 +38,21 @@ def getRMSE(c1,c2,dim):
     return rmse
 
 
-def summary(files,human,label=None):
+def getAvg(c1,dim):
+   
+    if dim=="ITO":
+        c1['ITO'] = (c1['u1'] + c1['u2'] + c1['u3'] + c1['u4'])/4
+    
+    av = np.average(c1[dim].values)
+
+    av_labels = [av]*len(c1)
+    rmse = mean_squared_error(c1[dim],av_labels,squared=False)
+
+    return rmse
+     
+
+
+def summary(files,human,av,label=None):
     data = PrettyTable()
 
 
@@ -41,7 +64,8 @@ def summary(files,human,label=None):
     print('================================================')
     print('             ',label)
     print('------------------------------------------------')
-    print('Average Baseline:',human)
+    print('Human Baseline:',human)
+    print('Average Baseline:',av)
 
     for i in range(len(features)):
         f = features[i]
@@ -50,7 +74,9 @@ def summary(files,human,label=None):
         row = [None]*len(features)
         df = pd.read_csv(fname)
         
-        df.drop(df.tail(1).index,inplace=True)
+        # for removing voting models
+        #df.drop(df.tail(1).index,inplace=True)
+        
         for j in range(len(strategy)):
             st = strategy[j]
             #print('  Strategy:',st)
@@ -69,16 +95,19 @@ template = ['easyRegress_report_basic_pca_','easyRegress_report_easyRegress_open
 
 dim_files = {}
 human_per = {}
-
+av_per = {}
+"""
 for dim in ['ARG','CF','CO','ITO','KE','SMU','STR']:
     dim_files[dim] = [f+dim for f in template]
     human_per[dim] = getRMSE(c1v4,c2v4,dim)
+    av_per[dim] = getAvg(c1v4,dim)
     label = dim + ' Analysis Report'
-    summary(dim_files[dim],human_per[dim],label)
+    summary(dim_files[dim],human_per[dim],av_per[dim],label)
+"""
 
 
-
-
+human= getRMSE(c1v4,c2v4,'final')
+av = getAvg(c1v4,'final')
 
 
 
@@ -86,7 +115,7 @@ files = ['easyRegress_report_basic_feature_pca','easyRegress_report_opensmile_pc
 
 
 
-
+summary(files,human,av,'Collaboration quality')
 
 
 
